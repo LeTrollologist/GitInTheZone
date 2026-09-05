@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Tab | GitInTheZone Developer Dashboard</title>
+  <link rel="stylesheet" href="newtab.css">
+</head>
+<body class="theme-dark">
+  <div class="dashboard-wrapper">
+    <!-- Top Navigation & Focus Bar -->
+    <header class="top-bar">
+      <div class="brand-section">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="4"></circle>
+            <line x1="1.05" y1="12" x2="7" y2="12"></line>
+            <line x1="17.01" y1="12" x2="22.96" y2="12"></line>
+          </svg>
+        </div>
+        <span class="brand-name">Git<span class="brand-accent">InTheZone</span></span>
+      </div>
+
+      <!-- Center: Focus / Pomodoro Control Pill -->
+      <div class="focus-control-pill" id="focus-control-bar">
+        <div class="focus-status-indicator" id="focus-status-dot"></div>
+        <span class="focus-status-label" id="focus-status-text">Focus Idle</span>
+        <span class="focus-timer-countdown hidden" id="focus-timer-countdown">25:00</span>
+        
+        <div class="focus-actions" id="focus-actions">
+          <button id="btn-quick-pomodoro" class="pill-btn primary" title="Start 25m Focus Session">25m Focus</button>
+          <button id="btn-deep-work" class="pill-btn" title="Start 50m Deep Work Session">50m Deep</button>
+          <button id="btn-stop-focus" class="pill-btn danger hidden" title="End Current Session">Stop</button>
+        </div>
+      </div>
+
+      <!-- Right: Clock & Settings Link -->
+      <div class="header-right">
+        <div class="clock-display" id="clock-display">
+          <span class="clock-time" id="clock-time">00:00</span>
+          <span class="clock-date" id="clock-date">Loading date...</span>
+        </div>
+        <button id="btn-open-options" class="icon-btn" title="Configure GitInTheZone Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Productivity Quick Stats Ribbon -->
+    <section class="stats-ribbon">
+      <div class="stat-badge-card">
+        <span class="stat-title">Focus Hours</span>
+        <div class="stat-value-group">
+          <span class="stat-val highlight" id="stat-focus-state">Active (09-17)</span>
+        </div>
+      </div>
+      <div class="stat-badge-card">
+        <span class="stat-title">Tasks Completed</span>
+        <div class="stat-value-group">
+          <span class="stat-val" id="stat-tasks-progress">0 / 0</span>
+        </div>
+      </div>
+      <div class="stat-badge-card">
+        <span class="stat-title">Current Commit Streak</span>
+        <div class="stat-value-group">
+          <span class="stat-val flame" id="stat-commit-streak">🔥 0 days</span>
+        </div>
+      </div>
+      <div class="stat-badge-card">
+        <span class="stat-title">Distractions Blocked</span>
+        <div class="stat-value-group">
+          <span class="stat-val shield" id="stat-blocked-count">🛡️ 0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Dashboard Two-Column Grid -->
+    <main class="dashboard-grid">
+      <!-- Left Column: Daily Task Manager -->
+      <section class="card task-manager-card">
+        <div class="card-header">
+          <div class="header-left">
+            <h2>Daily Sprint Backlog</h2>
+            <span class="badge" id="active-task-badge">0 pending</span>
+          </div>
+          <div class="header-filters">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="today">Today</button>
+            <button class="filter-tab" data-filter="active">Active</button>
+            <button class="filter-tab" data-filter="completed">Done</button>
+          </div>
+        </div>
+
+        <!-- Task Progress Bar -->
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="task-progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="progress-caption">
+          <span id="progress-percent-label">0% completed</span>
+          <button id="btn-clear-completed" class="text-link-btn">Clear finished</button>
+        </div>
+
+        <!-- New Task Input Form -->
+        <form id="new-task-form" class="new-task-form">
+          <div class="task-input-row">
+            <input type="text" id="task-input-text" placeholder="What are you building or solving? Press Enter..." autocomplete="off" required>
+            <button type="submit" class="btn-add-task" id="btn-add-task">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Add
+            </button>
+          </div>
+          <div class="task-metadata-controls">
+            <!-- Priority selector -->
+            <div class="priority-selector" id="priority-options">
+              <span class="control-label">Priority:</span>
+              <button type="button" class="priority-btn p1" data-priority="p1">P1 Urgent</button>
+              <button type="button" class="priority-btn p2 active" data-priority="p2">P2 Normal</button>
+              <button type="button" class="priority-btn p3" data-priority="p3">P3 Low</button>
+            </div>
+            <!-- Category Tag selector -->
+            <div class="tag-selector">
+              <span class="control-label">Tag:</span>
+              <select id="task-tag-select" class="tag-dropdown">
+                <option value="#code">#code</option>
+                <option value="#bug">#bug</option>
+                <option value="#review">#review</option>
+                <option value="#feature">#feature</option>
+                <option value="#docs">#docs</option>
+                <option value="#infra">#infra</option>
+                <option value="#learning">#learning</option>
+              </select>
+            </div>
+          </div>
+        </form>
+
+        <!-- Tasks List -->
+        <div class="tasks-scroll-container">
+          <ul id="task-list" class="task-items-list">
+            <!-- Dynamically populated -->
+          </ul>
+          <div id="empty-tasks-state" class="empty-state hidden">
+            <div class="empty-icon">☕</div>
+            <p class="empty-title">All tasks cleared</p>
+            <p class="empty-subtitle">Take a breath or queue up your next commit.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: GitHub Activity & Developer Center -->
+      <section class="right-column-container">
+        <!-- GitHub Contribution Heatmap Card -->
+        <div class="card github-card">
+          <div class="card-header">
+            <div class="header-left">
+              <div class="github-title-group">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                </svg>
+                <h2 id="github-username-header">GitHub Contributions</h2>
+              </div>
+              <a id="github-profile-link" href="https://github.com" target="_blank" class="github-profile-badge" title="Open GitHub Profile">
+                <span id="github-user-label">@torvalds</span>
+              </a>
+            </div>
+            <div class="header-actions">
+              <!-- Theme Picker -->
+              <select id="graph-theme-select" class="theme-picker-select" title="Change heatmap theme">
+                <option value="github-dark">GitHub Classic</option>
+                <option value="emerald">Emerald Matrix</option>
+                <option value="amber">Cyberpunk Amber</option>
+                <option value="dracula">Dracula Purple</option>
+                <option value="sky">Nordic Cyan</option>
+              </select>
+              <button id="btn-refresh-github" class="icon-btn small" title="Refresh GitHub Data">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M1 20v-6h6"></path>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Heatmap Container -->
+          <div class="heatmap-wrapper">
+            <div id="github-heatmap-container" class="github-heatmap-container">
+              <div class="heatmap-skeleton">Loading contribution matrix...</div>
+            </div>
+            <!-- Heatmap Legend -->
+            <div class="heatmap-footer">
+              <span class="demo-indicator hidden" id="demo-indicator">⚡ Live Demo / Offline Preview</span>
+              <div class="heatmap-legend">
+                <span>Less</span>
+                <span class="legend-cell level-0"></span>
+                <span class="legend-cell level-1"></span>
+                <span class="legend-cell level-2"></span>
+                <span class="legend-cell level-3"></span>
+                <span class="legend-cell level-4"></span>
+                <span>More</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Heatmap Metric Mini-Cards -->
+          <div class="github-metrics-grid">
+            <div class="metric-mini-card">
+              <span class="metric-label">Yearly Contributions</span>
+              <span class="metric-value" id="metric-total-commits">0</span>
+            </div>
+            <div class="metric-mini-card">
+              <span class="metric-label">Current Streak</span>
+              <span class="metric-value" id="metric-current-streak">0 days</span>
+            </div>
+            <div class="metric-mini-card">
+              <span class="metric-label">Longest Streak</span>
+              <span class="metric-value" id="metric-longest-streak">0 days</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Developer Hub & Bookmarks -->
+        <div class="card dev-dock-card">
+          <div class="card-header">
+            <h3>⚡ Quick Dev Launchpad</h3>
+          </div>
+          <div class="dock-links-grid">
+            <a href="https://github.com" target="_blank" class="dock-link">
+              <span class="dock-icon">🐙</span>
+              <span class="dock-text">GitHub</span>
+            </a>
+            <a href="https://github.com/pulls" target="_blank" class="dock-link">
+              <span class="dock-icon">🔀</span>
+              <span class="dock-text">Pull Requests</span>
+            </a>
+            <a href="https://stackoverflow.com" target="_blank" class="dock-link">
+              <span class="dock-icon">💬</span>
+              <span class="dock-text">StackOverflow</span>
+            </a>
+            <a href="https://developer.mozilla.org" target="_blank" class="dock-link">
+              <span class="dock-icon">📖</span>
+              <span class="dock-text">MDN Docs</span>
+            </a>
+            <a href="https://devdocs.io" target="_blank" class="dock-link">
+              <span class="dock-icon">⚡</span>
+              <span class="dock-text">DevDocs</span>
+            </a>
+            <a href="https://news.ycombinator.com" target="_blank" class="dock-link" id="link-hacker-news">
+              <span class="dock-icon">🟧</span>
+              <span class="dock-text">Hacker News</span>
+            </a>
+            <a href="http://localhost:3000" target="_blank" class="dock-link">
+              <span class="dock-icon">🖥️</span>
+              <span class="dock-text">localhost:3000</span>
+            </a>
+            <a href="http://localhost:8080" target="_blank" class="dock-link">
+              <span class="dock-icon">🚀</span>
+              <span class="dock-text">localhost:8080</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Developer Quote Card -->
+        <div class="card quote-card">
+          <div class="quote-header">
+            <span class="quote-tag">💡 Daily Insight</span>
+            <button id="btn-next-quote" class="icon-btn tiny" title="Cycle another quote">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+            </button>
+          </div>
+          <p class="quote-content" id="dashboard-quote-text">"Talk is cheap. Show me the code."</p>
+          <span class="quote-author-name" id="dashboard-quote-author">— Linus Torvalds</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="newtab.js"></script>
+</body>
+</html>

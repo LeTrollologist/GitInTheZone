@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings | GitInTheZone</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <!-- Header -->
+    <header class="options-header">
+      <div class="header-brand">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="brand-icon">
+          <circle cx="12" cy="12" r="4"></circle>
+          <line x1="1.05" y1="12" x2="7" y2="12"></line>
+          <line x1="17.01" y1="12" x2="22.96" y2="12"></line>
+        </svg>
+        <h1>Git<span class="brand-accent">InTheZone</span> Preferences</h1>
+      </div>
+      <div class="header-actions">
+        <button id="btn-open-dashboard" class="btn-secondary">Open Dashboard (New Tab)</button>
+        <button id="btn-save-settings" class="btn-primary">Save Changes</button>
+      </div>
+    </header>
+
+    <!-- Notification Toast -->
+    <div id="save-toast" class="toast hidden">Settings saved successfully!</div>
+
+    <div class="options-body">
+      <!-- Section 1: Focus Hours Schedule -->
+      <section class="settings-card">
+        <div class="section-title-group">
+          <span class="section-icon">⏰</span>
+          <div>
+            <h2>Focus Hours Schedule</h2>
+            <p class="section-desc">Designate automatic focus intervals where distracting sites are blocked.</p>
+          </div>
+        </div>
+
+        <div class="form-group toggle-row">
+          <label for="schedule-enabled" class="toggle-label">
+            <span class="label-heading">Enable Focus Schedule</span>
+            <span class="label-sub">Automatically activate focus mode during designated hours.</span>
+          </label>
+          <input type="checkbox" id="schedule-enabled" class="switch-checkbox">
+        </div>
+
+        <div class="form-row time-row">
+          <div class="form-group half">
+            <label for="schedule-start">Work Start Time</label>
+            <input type="time" id="schedule-start" value="09:00">
+          </div>
+          <div class="form-group half">
+            <label for="schedule-end">Work End Time</label>
+            <input type="time" id="schedule-end" value="17:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Active Days</label>
+          <div class="days-selector" id="days-selector">
+            <label class="day-checkbox"><input type="checkbox" value="1"><span>Mon</span></label>
+            <label class="day-checkbox"><input type="checkbox" value="2"><span>Tue</span></label>
+            <label class="day-checkbox"><input type="checkbox" value="3"><span>Wed</span></label>
+            <label class="day-checkbox"><input type="checkbox" value="4"><span>Thu</span></label>
+            <label class="day-checkbox"><input type="checkbox" value="5"><span>Fri</span></label>
+            <label class="day-checkbox"><input type="checkbox" value="6"><span>Sat</span></label>
+            <label class="day-checkbox"><input type="checkbox" value="0"><span>Sun</span></label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 2: Distraction Blocklist -->
+      <section class="settings-card">
+        <div class="section-title-group">
+          <span class="section-icon">🛡️</span>
+          <div>
+            <h2>Distraction Blocklist</h2>
+            <p class="section-desc">Websites restricted while you are In The Zone.</p>
+          </div>
+        </div>
+
+        <div class="form-group toggle-row">
+          <label for="block-redirect-enabled" class="toggle-label">
+            <span class="label-heading">Redirect to Focus Guard</span>
+            <span class="label-sub">When visiting a blocked site, redirect to the GitInTheZone terminal reminder page.</span>
+          </label>
+          <input type="checkbox" id="block-redirect-enabled" class="switch-checkbox">
+        </div>
+
+        <!-- Add domain input -->
+        <div class="add-domain-row">
+          <input type="text" id="input-new-domain" placeholder="e.g. reddit.com, news.ycombinator.com" autocomplete="off">
+          <button id="btn-add-domain" class="btn-secondary">+ Add Domain</button>
+        </div>
+
+        <!-- Blocked list chips/table -->
+        <div class="blocklist-header">
+          <span class="blocklist-count" id="blocklist-count">0 domains blocked</span>
+          <button id="btn-reset-blocklist" class="btn-text-danger">Reset to default list</button>
+        </div>
+
+        <ul class="blocklist-items" id="blocklist-items">
+          <!-- Dynamically populated -->
+        </ul>
+      </section>
+
+      <!-- Section 3: GitHub Integration -->
+      <section class="settings-card">
+        <div class="section-title-group">
+          <span class="section-icon">🐙</span>
+          <div>
+            <h2>GitHub Activity & Heatmap</h2>
+            <p class="section-desc">Connect your GitHub account to sync your contribution matrix and commit streak.</p>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="github-username">GitHub Username</label>
+          <input type="text" id="github-username" placeholder="e.g. torvalds" autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label for="github-token">
+            Personal Access Token (Optional)
+            <span class="label-sub">Required only if you want private repository contributions counted in the GraphQL API.</span>
+          </label>
+          <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        </div>
+
+        <div class="form-group">
+          <label for="github-theme-select">Heatmap Color Theme</label>
+          <select id="github-theme-select" class="dropdown-styled">
+            <option value="github-dark">GitHub Classic (Green)</option>
+            <option value="emerald">Emerald Matrix</option>
+            <option value="amber">Cyberpunk Amber</option>
+            <option value="dracula">Dracula Purple</option>
+            <option value="sky">Nordic Cyan</option>
+          </select>
+        </div>
+
+        <button id="btn-test-github" class="btn-secondary">Test Connection & Refresh</button>
+        <span id="github-test-result" class="test-feedback"></span>
+      </section>
+
+      <!-- Section 4: General Preferences & Data -->
+      <section class="settings-card">
+        <div class="section-title-group">
+          <span class="section-icon">⚙️</span>
+          <div>
+            <h2>Preferences & Backup</h2>
+            <p class="section-desc">Configure clock formats, daily targets, and manage data.</p>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label for="clock-format-select">Clock Format</label>
+            <select id="clock-format-select" class="dropdown-styled">
+              <option value="24h">24-Hour (14:30)</option>
+              <option value="12h">12-Hour (2:30 PM)</option>
+            </select>
+          </div>
+          <div class="form-group half">
+            <label for="daily-goal-input">Daily Task Target</label>
+            <input type="number" id="daily-goal-input" min="1" max="50" value="5">
+          </div>
+        </div>
+
+        <div class="data-actions-row">
+          <button id="btn-export-json" class="btn-secondary">Export Data (JSON)</button>
+          <label class="btn-secondary btn-file-label">
+            Import Backup
+            <input type="file" id="import-file-input" accept=".json" class="hidden">
+          </label>
+          <button id="btn-clear-tasks" class="btn-secondary">Clear Completed Tasks</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

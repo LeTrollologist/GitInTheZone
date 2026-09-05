@@ -1,0 +1,58 @@
+{
+  "manifest_version": 3,
+  "name": "GitInTheZone: Developer Focus & Tasks",
+  "version": "1.0.0",
+  "description": "Developer productivity extension: Blocks distracting sites during focus hours, replaces the new tab page with a daily task backlog and a GitHub contribution graph.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "GitInTheZone Focus",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "chrome_url_overrides": {
+    "newtab": "newtab/newtab.html"
+  },
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "background": {
+    "service_worker": "background/service_worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "*://*/*",
+    "https://api.github.com/*",
+    "https://github-contributions-api.jogruber.de/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "blocked/*",
+        "icons/*",
+        "shared/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "gitinthezone@developer.productivity",
+      "strict_min_version": "109.0"
+    }
+  }
+}
