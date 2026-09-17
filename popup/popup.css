@@ -169,6 +169,16 @@ body {
   background: rgba(239, 68, 68, 0.35);
 }
 
+.timer-btn.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.timer-btn.warning:hover {
+  background: rgba(245, 158, 11, 0.35);
+}
+
 .hidden {
   display: none !important;
 }

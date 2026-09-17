@@ -1,6 +1,7 @@
 // blocked/blocked.js
 import { getSettings, getTasks, evaluateFocusStatus } from '../shared/storage.js';
 import { DEV_QUOTES } from '../shared/constants.js';
+import { sortTasksForDisplay } from '../shared/tasks.js';
 
 let countdownTimer = null;
 let destinationUrl = '';
@@ -80,7 +81,7 @@ async function updateStatusDisplay(fallbackReason = '') {
 
 async function loadPendingTasks() {
   const tasks = await getTasks();
-  const pendingTasks = tasks.filter(t => !t.completed);
+  const pendingTasks = sortTasksForDisplay(tasks.filter(t => !t.completed));
 
   const countBadge = document.getElementById('pending-count');
   const listEl = document.getElementById('reminder-task-list');
@@ -92,10 +93,6 @@ async function loadPendingTasks() {
     listEl.innerHTML = '<li class="empty-item">All caught up! Great job. Add more tasks in your dashboard.</li>';
     return;
   }
-
-  // Sort by priority (p1 -> p2 -> p3)
-  const priorityWeight = { p1: 1, p2: 2, p3: 3 };
-  pendingTasks.sort((a, b) => (priorityWeight[a.priority] || 2) - (priorityWeight[b.priority] || 2));
 
   // Display top 3 tasks
   const topTasks = pendingTasks.slice(0, 3);

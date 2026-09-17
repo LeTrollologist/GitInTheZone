@@ -1,5 +1,6 @@
 // popup/popup.js
 import { getSettings, updateSettings, getTasks, saveTasks, evaluateFocusStatus } from '../shared/storage.js';
+import { createTask, sortTasksForDisplay } from '../shared/tasks.js';
 
 let appSettings = null;
 let allTasks = [];
@@ -22,6 +23,8 @@ function initFocusControls() {
   const btn25 = document.getElementById('popup-btn-25');
   const btn50 = document.getElementById('popup-btn-50');
   const btnStop = document.getElementById('popup-btn-stop');
+  const btnSnooze = document.getElementById('popup-btn-snooze');
+  const btnResume = document.getElementById('popup-btn-resume');
 
   async function refresh() {
     appSettings = await getSettings();
@@ -30,6 +33,8 @@ function initFocusControls() {
     dotEl.className = 'status-dot';
     timerBadge.classList.add('hidden');
     btnStop.classList.add('hidden');
+    btnSnooze.classList.add('hidden');
+    btnResume.classList.add('hidden');
     btn25.classList.remove('hidden');
     btn50.classList.remove('hidden');
 
@@ -37,13 +42,20 @@ function initFocusControls() {
       dotEl.classList.add('snooze');
       textEl.textContent = 'Break Snooze';
       timerBadge.classList.remove('hidden');
+      btn25.classList.add('hidden');
+      btn50.classList.add('hidden');
+      btnResume.classList.remove('hidden');
       tickCountdown(status.until);
     } else if (status.active) {
       dotEl.classList.add('active');
       textEl.textContent = status.reason === 'schedule' ? 'In The Zone' : 'Deep Focus';
-      btnStop.classList.remove('hidden');
       btn25.classList.add('hidden');
       btn50.classList.add('hidden');
+      if (status.reason === 'schedule') {
+        btnSnooze.classList.remove('hidden');
+      } else {
+        btnStop.classList.remove('hidden');
+      }
 
       if (status.until) {
         timerBadge.classList.remove('hidden');
@@ -104,6 +116,24 @@ function initFocusControls() {
     }
   });
 
+  btnSnooze.addEventListener('click', () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'REQUEST_SNOOZE', minutes: 5 }, refresh);
+    } else {
+      appSettings.snooze = { active: true, until: Date.now() + 5 * 60 * 1000 };
+      updateSettings(appSettings).then(refresh);
+    }
+  });
+
+  btnResume.addEventListener('click', () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'CANCEL_SNOOZE' }, refresh);
+    } else {
+      appSettings.snooze = { active: false, until: null };
+      updateSettings(appSettings).then(refresh);
+    }
+  });
+
   refresh();
 }
 
@@ -115,7 +145,7 @@ function initTasksQuickList() {
 
   function renderList() {
     listEl.innerHTML = '';
-    const pendingTasks = allTasks.filter(t => !t.completed);
+    const pendingTasks = sortTasksForDisplay(allTasks.filter(t => !t.completed));
     badgeMini.textContent = pendingTasks.length;
 
     if (pendingTasks.length === 0) {
@@ -158,15 +188,10 @@ function initTasksQuickList() {
     const text = input.value.trim();
     if (!text) return;
 
-    const newTask = {
-      id: 'task-' + Date.now(),
-      text,
-      completed: false,
-      priority: 'p2',
-      tag: '#code',
-      createdAt: Date.now(),
-      completedAt: null
-    };
+    const newTask = createTask(text, {
+      fallbackPriority: 'p2',
+      fallbackTag: '#code'
+    });
 
     allTasks.unshift(newTask);
     await saveTasks(allTasks);

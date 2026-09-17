@@ -171,6 +171,16 @@ body {
   background: rgba(239, 68, 68, 0.35);
 }
 
+.pill-btn.warning {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.pill-btn.warning:hover {
+  background: rgba(245, 158, 11, 0.35);
+}
+
 .hidden {
   display: none !important;
 }
@@ -389,6 +399,12 @@ body {
 
 .text-link-btn:hover {
   color: #f87171;
+}
+
+.text-link-btn:disabled {
+  color: #475569;
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 /* New Task Form */

@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { isUrlBlocked, evaluateFocusStatus } from '../shared/storage.js';
 import { calculateStreaks, generateSyntheticContributions } from '../shared/github.js';
 import { DEFAULT_BLOCKLIST, DEFAULT_SETTINGS } from '../shared/constants.js';
+import { parseTaskInput, sortTasksForDisplay } from '../shared/tasks.js';
 
 let passed = 0;
 let failed = 0;
@@ -37,6 +38,9 @@ it('should block path-specific patterns', () => {
   assert.strictEqual(isUrlBlocked('https://discord.com/app', ['discord.com/app']), true);
   assert.strictEqual(isUrlBlocked('https://discord.com/app/channels/123', ['discord.com/app']), true);
   assert.strictEqual(isUrlBlocked('https://discord.com/blog', ['discord.com/app']), false);
+  assert.strictEqual(isUrlBlocked('https://notdiscord.com/app', ['discord.com/app']), false);
+  assert.strictEqual(isUrlBlocked('https://youtube.com/watch?v=abc123', ['https://youtube.com/watch?feature=share']), true);
+  assert.strictEqual(isUrlBlocked('https://example.com:8443/social', ['example.com:8443/social']), true);
 });
 
 it('should NOT block developer, local, or allowed domains', () => {
@@ -44,7 +48,13 @@ it('should NOT block developer, local, or allowed domains', () => {
   assert.strictEqual(isUrlBlocked('https://stackoverflow.com/questions/1234', DEFAULT_BLOCKLIST), false);
   assert.strictEqual(isUrlBlocked('http://localhost:3000', DEFAULT_BLOCKLIST), false);
   assert.strictEqual(isUrlBlocked('http://127.0.0.1:8080/api', DEFAULT_BLOCKLIST), false);
+  assert.strictEqual(isUrlBlocked('http://192.168.1.10:8080/reddit.com', DEFAULT_BLOCKLIST), false);
   assert.strictEqual(isUrlBlocked('chrome-extension://abcdefg/blocked/blocked.html', DEFAULT_BLOCKLIST), false);
+});
+
+it('should support wildcard block patterns', () => {
+  assert.strictEqual(isUrlBlocked('https://music.youtube.com/playlist', ['*.youtube.com']), true);
+  assert.strictEqual(isUrlBlocked('https://youtube.com/playlist', ['*.youtube.com']), true);
 });
 
 console.log('\n--- 2. Focus Schedule & Pomodoro Evaluation ---');
@@ -186,6 +196,32 @@ it('should generate valid synthetic contributions in offline/fallback mode', () 
   assert.strictEqual(demo.contributions.length, 365);
   assert.ok(demo.total >= 0);
   assert.ok(demo.contributions.every(c => c.level >= 0 && c.level <= 4));
+});
+
+console.log('\n--- 4. Task Input QoL Helpers ---');
+
+it('should parse inline priority and tag syntax from quick task input', () => {
+  assert.deepStrictEqual(parseTaskInput('p1 #bug Fix flaky OAuth callback'), {
+    text: 'Fix flaky OAuth callback',
+    priority: 'p1',
+    tag: '#bug'
+  });
+
+  assert.deepStrictEqual(parseTaskInput('!! #review Check auth PR', { fallbackPriority: 'p3', fallbackTag: '#docs' }), {
+    text: 'Check auth PR',
+    priority: 'p1',
+    tag: '#review'
+  });
+});
+
+it('should sort active high-priority tasks before completed tasks', () => {
+  const tasks = [
+    { id: 'done', text: 'Done', completed: true, priority: 'p1', createdAt: 5, completedAt: 6 },
+    { id: 'low', text: 'Low', completed: false, priority: 'p3', createdAt: 20 },
+    { id: 'urgent', text: 'Urgent', completed: false, priority: 'p1', createdAt: 10 }
+  ];
+
+  assert.deepStrictEqual(sortTasksForDisplay(tasks).map(t => t.id), ['urgent', 'low', 'done']);
 });
 
 console.log(`\n=== Tests Completed: ${passed} Passed, ${failed} Failed ===\n`);

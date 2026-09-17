@@ -221,6 +221,69 @@ export function evaluateFocusStatus(settings, dateObj = new Date()) {
 /**
  * Check if a URL matches any blocked domain or pattern in the blocklist.
  */
+function normalizeBlockPattern(pattern) {
+  let value = String(pattern || '').trim().toLowerCase();
+  if (!value) return null;
+
+  value = value
+    .replace(/^https?:\/\//, '')
+    .split(/[?#]/)[0]
+    .replace(/\/+$/, '');
+
+  let wildcard = false;
+  if (value.startsWith('*.')) {
+    wildcard = true;
+    value = value.slice(2);
+  }
+
+  const slashIndex = value.indexOf('/');
+  const rawHostname = slashIndex === -1 ? value : value.slice(0, slashIndex);
+  const hostname = rawHostname.replace(/:\d+$/, '');
+  const rawPath = slashIndex === -1 ? '' : value.slice(slashIndex);
+
+  if (!hostname) return null;
+
+  return {
+    hostname,
+    path: rawPath ? rawPath.replace(/\/+$/, '') || '/' : '',
+    wildcard
+  };
+}
+
+function hostnameMatches(hostname, patternHostname, wildcard = false) {
+  if (hostname === patternHostname) return true;
+  if (wildcard) return hostname.endsWith(`.${patternHostname}`);
+  return hostname.endsWith(`.${patternHostname}`);
+}
+
+function pathMatches(pathname, patternPath) {
+  if (!patternPath) return true;
+  const normalizedPath = (pathname || '/').replace(/\/+$/, '') || '/';
+  return normalizedPath === patternPath || normalizedPath.startsWith(`${patternPath}/`);
+}
+
+function isDeveloperHost(hostname) {
+  const normalized = hostname.replace(/^\[|\]$/g, '');
+
+  if (
+    normalized === 'localhost' ||
+    normalized === '127.0.0.1' ||
+    normalized === '0.0.0.0' ||
+    normalized === '::1' ||
+    normalized.endsWith('.local') ||
+    normalized.endsWith('.test')
+  ) {
+    return true;
+  }
+
+  return (
+    /^10\./.test(normalized) ||
+    /^192\.168\./.test(normalized) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(normalized) ||
+    /^169\.254\./.test(normalized)
+  );
+}
+
 export function isUrlBlocked(urlString, blocklist = []) {
   if (!urlString || typeof urlString !== 'string') return false;
 
@@ -240,33 +303,22 @@ export function isUrlBlocked(urlString, blocklist = []) {
   try {
     const parsed = new URL(urlString);
     const hostname = parsed.hostname.toLowerCase();
-    const fullPath = (hostname + parsed.pathname).toLowerCase();
+    const pathname = parsed.pathname.toLowerCase();
 
     // Whitelist localhost and private IPs for developer workflow
-    if (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '::1' ||
-      hostname.endsWith('.local') ||
-      hostname.endsWith('.test')
-    ) {
+    if (isDeveloperHost(hostname)) {
       return false;
     }
 
     for (const pattern of blocklist) {
-      const cleanPattern = pattern.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      const cleanPattern = normalizeBlockPattern(pattern);
       if (!cleanPattern) continue;
 
-      // Check if pattern contains a path segment (e.g. discord.com/app)
-      if (cleanPattern.includes('/')) {
-        if (fullPath.startsWith(cleanPattern) || fullPath.includes(cleanPattern)) {
-          return true;
-        }
-      } else {
-        // Domain match (exact hostname or subdomain)
-        if (hostname === cleanPattern || hostname.endsWith('.' + cleanPattern)) {
-          return true;
-        }
+      if (
+        hostnameMatches(hostname, cleanPattern.hostname, cleanPattern.wildcard) &&
+        pathMatches(pathname, cleanPattern.path)
+      ) {
+        return true;
       }
     }
   } catch {

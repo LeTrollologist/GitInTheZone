@@ -2,6 +2,7 @@
 import { getSettings, updateSettings, getTasks, saveTasks, evaluateFocusStatus } from '../shared/storage.js';
 import { DEV_QUOTES, GRAPH_THEMES } from '../shared/constants.js';
 import { fetchGitHubContributions, renderContributionGraph } from '../shared/github.js';
+import { createTask, sortTasksForDisplay } from '../shared/tasks.js';
 
 let appSettings = null;
 let allTasks = [];
@@ -74,6 +75,8 @@ async function initFocusManager() {
   const btn25 = document.getElementById('btn-quick-pomodoro');
   const btn50 = document.getElementById('btn-deep-work');
   const btnStop = document.getElementById('btn-stop-focus');
+  const btnSnooze = document.getElementById('btn-snooze-focus');
+  const btnCancelSnooze = document.getElementById('btn-cancel-snooze');
 
   async function refreshFocusState() {
     appSettings = await getSettings();
@@ -82,6 +85,8 @@ async function initFocusManager() {
     dotEl.className = 'focus-status-indicator';
     countdownEl.classList.add('hidden');
     btnStop.classList.add('hidden');
+    btnSnooze.classList.add('hidden');
+    btnCancelSnooze.classList.add('hidden');
     btn25.classList.remove('hidden');
     btn50.classList.remove('hidden');
 
@@ -89,13 +94,20 @@ async function initFocusManager() {
       dotEl.classList.add('snooze');
       labelEl.textContent = 'Break Snooze';
       countdownEl.classList.remove('hidden');
+      btn25.classList.add('hidden');
+      btn50.classList.add('hidden');
+      btnCancelSnooze.classList.remove('hidden');
       tickCountdown(status.until);
     } else if (status.active) {
       dotEl.classList.add('active');
       labelEl.textContent = status.reason === 'schedule' ? 'Focus Hours' : 'Deep Focus';
-      btnStop.classList.remove('hidden');
       btn25.classList.add('hidden');
       btn50.classList.add('hidden');
+      if (status.reason === 'schedule') {
+        btnSnooze.classList.remove('hidden');
+      } else {
+        btnStop.classList.remove('hidden');
+      }
 
       if (status.until) {
         countdownEl.classList.remove('hidden');
@@ -161,6 +173,26 @@ async function initFocusManager() {
     }
   });
 
+  btnSnooze.addEventListener('click', async () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'REQUEST_SNOOZE', minutes: 5 }, refreshFocusState);
+    } else {
+      appSettings.snooze = { active: true, until: Date.now() + 5 * 60 * 1000 };
+      await updateSettings(appSettings);
+      refreshFocusState();
+    }
+  });
+
+  btnCancelSnooze.addEventListener('click', async () => {
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime.sendMessage({ type: 'CANCEL_SNOOZE' }, refreshFocusState);
+    } else {
+      appSettings.snooze = { active: false, until: null };
+      await updateSettings(appSettings);
+      refreshFocusState();
+    }
+  });
+
   await refreshFocusState();
 }
 
@@ -200,25 +232,31 @@ function initTaskManager() {
     const text = input.value.trim();
     if (!text) return;
 
-    const newTask = {
-      id: 'task-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-      text,
-      completed: false,
-      priority: selectedPriority,
-      tag: tagSelect.value,
-      createdAt: Date.now(),
-      completedAt: null
-    };
+    const newTask = createTask(text, {
+      fallbackPriority: selectedPriority,
+      fallbackTag: tagSelect.value
+    });
 
     allTasks.unshift(newTask);
     await saveTasks(allTasks);
 
     input.value = '';
+    selectedPriority = newTask.priority;
+    if ([...tagSelect.options].some(option => option.value === newTask.tag)) {
+      tagSelect.value = newTask.tag;
+    }
+    priorityBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-priority') === selectedPriority);
+    });
     renderTasks();
   });
 
   // Clear completed
   btnClearCompleted.addEventListener('click', async () => {
+    const completedCount = allTasks.filter(t => t.completed).length;
+    if (completedCount === 0) return;
+    if (!confirm(`Clear ${completedCount} completed task${completedCount === 1 ? '' : 's'}?`)) return;
+
     allTasks = allTasks.filter(t => !t.completed);
     await saveTasks(allTasks);
     renderTasks();
@@ -233,6 +271,7 @@ function renderTasks() {
   const activeBadge = document.getElementById('active-task-badge');
   const progressBar = document.getElementById('task-progress-bar');
   const progressLabel = document.getElementById('progress-percent-label');
+  const btnClearCompleted = document.getElementById('btn-clear-completed');
 
   listEl.innerHTML = '';
 
@@ -258,6 +297,8 @@ function renderTasks() {
   const percent = total === 0 ? 0 : Math.round((completedCount / total) * 100);
   progressBar.style.width = `${percent}%`;
   progressLabel.textContent = `${completedCount} of ${total} tasks finished (${percent}%)`;
+  btnClearCompleted.disabled = completedCount === 0;
+  btnClearCompleted.title = completedCount === 0 ? 'No completed tasks to clear' : 'Clear completed tasks';
 
   if (filtered.length === 0) {
     emptyEl.classList.remove('hidden');
@@ -265,7 +306,7 @@ function renderTasks() {
     emptyEl.classList.add('hidden');
   }
 
-  filtered.forEach(task => {
+  sortTasksForDisplay(filtered).forEach(task => {
     const li = document.createElement('li');
     li.className = `task-item ${task.completed ? 'completed' : ''}`;
     li.setAttribute('data-id', task.id);
@@ -442,9 +483,12 @@ function updateStatsRibbon(focusStatus = null) {
     stateEl.style.color = '#94a3b8';
   }
 
-  const completedToday = allTasks.filter(t => t.completed).length;
-  const totalTasks = allTasks.length;
-  tasksEl.textContent = `${completedToday} / ${totalTasks}`;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const completedToday = allTasks.filter(t => t.completedAt && t.completedAt >= todayStart.getTime()).length;
+  const dailyGoal = Math.max(1, Number(appSettings?.dailyGoal) || 5);
+  tasksEl.textContent = `${completedToday} / ${dailyGoal}`;
+  tasksEl.title = `${completedToday} tasks completed today`;
 
   if (cachedContributionData) {
     streakEl.textContent = `🔥 ${cachedContributionData.currentStreak || 0} days`;
