@@ -4,6 +4,9 @@
 
 Built for **Chrome**, **Brave**, **Edge**, and **Firefox** (Manifest V3).
 
+<img width="1904" height="852" alt="image" src="https://github.com/user-attachments/assets/8dae47b5-2a96-4e52-9fcd-c88401266760" />
+
+
 ---
 
 ## Why I Built This
